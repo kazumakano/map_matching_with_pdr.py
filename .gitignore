@@ -1,0 +1,3 @@
+config/*.yaml
+!config/default.yaml
+script/__pycache__/
