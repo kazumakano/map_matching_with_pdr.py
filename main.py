@@ -118,7 +118,9 @@ def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], ena
                 if pf_param.TRUTH_LOG_FILE is not None:
                     buf_len = len(lost_ts_buf)
                     for i, lt in enumerate(lost_ts_buf):
-                        map.draw_truth(truth.update_err(lt, pf_util.get_lerped_pos(estim_pos, last_estim_pos, i, buf_len), map.resolution, True), True)
+                        lerped_pos = pf_util.get_lerped_pos(estim_pos, last_estim_pos, i, buf_len)
+                        map.draw_lerped_pos(lerped_pos, True)
+                        map.draw_truth(truth.update_err(lt, lerped_pos, map.resolution, True), True)
                     lost_ts_buf = np.empty(0, dtype=datetime)
                     map.draw_truth(truth.update_err(t, estim_pos, map.resolution, False), True)
 
