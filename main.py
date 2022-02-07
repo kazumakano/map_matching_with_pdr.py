@@ -103,7 +103,7 @@ def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], ena
         if LOST_TJ_POLICY == 1:
             if not pf_param.IS_LOST:
                 estim_pos = pf_util.estim_pos(particles)
-                map.draw_particles(particles)
+                map.draw_particles(estim_pos, particles)
             if pf_param.TRUTH_LOG_FILE is not None:
                 map.draw_truth(truth.update_err(t, estim_pos, map.resolution, pf_param.IS_LOST), True)
 
@@ -113,7 +113,7 @@ def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], ena
                 lost_ts_buf = np.hstack((lost_ts_buf, t))
             elif not pf_param.IS_LOST:
                 estim_pos = pf_util.estim_pos(particles)
-                map.draw_particles(particles)
+                map.draw_particles(estim_pos, particles)
 
                 if pf_param.TRUTH_LOG_FILE is not None:
                     buf_len = len(lost_ts_buf)
