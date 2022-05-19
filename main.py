@@ -16,8 +16,8 @@ from particle_filter.script.resample import resample
 from particle_filter.script.truth import Truth
 from particle_filter_with_pdr.script.window import Window
 import deep_pdr.script.utility as dpdr_util
-from deep_pdr.script.direct_model import SimpleCNN
-from deep_pdr.script.speed_model import FusionLSTM
+from deep_pdr.script.direction_model import CNN
+from deep_pdr.script.speed_model import DualCNNLSTM
 import deep_pdr.script.parameter as dpdr_param
 import simple_pdr.script.parameter as spdr_param
 
@@ -29,9 +29,7 @@ def _set_main_params(conf: dict[str, Any]) -> None:
     END = datetime.strptime(conf["end"], "%Y-%m-%d %H:%M:%S")
     INERTIAL_LOG_FILE = str(conf["inertial_log_file"])
     RSSI_LOG_FILE = str(conf["rssi_log_file"])
-    DIRECT_MODEL_HP_FILE = str(conf["direct_model_hp_file"])
-    DIRECT_MODEL_STATE_FILE = str(conf["direct_model_state_file"])
-    SPEED_MODEL_HP_FILE = str(conf["speed_model_hp_file"])
+    # DIRECT_MODEL_STATE_FILE = str(conf["direct_model_state_file"])
     SPEED_MODEL_STATE_FILE = str(conf["speed_model_state_file"])
     INIT_DIRECT = np.float16(conf["init_direct"])
     INIT_DIRECT_SD = np.float16(conf["init_direct_sd"])
@@ -41,11 +39,11 @@ def _set_main_params(conf: dict[str, Any]) -> None:
     PARTICLE_NUM = np.int16(conf["particle_num"])
     RESULT_DIR_NAME = None if conf["result_dir_name"] is None else str(conf["result_dir_name"])
 
-def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], enable_show: bool = True) -> None:
+def map_matching_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], enable_show: bool = True) -> None:
     device = dpdr_util.get_device(gpu_id)
     print(f"main.py: device is {device}")
     
-    inertial_log = DpdrLog(BEGIN, END, path.join(spdr_param.ROOT_DIR, "log/", INERTIAL_LOG_FILE))
+    inertial_log = DpdrLog(BEGIN, END, path.join(dpdr_param.ROOT_DIR, "log/", INERTIAL_LOG_FILE))
     pdr_result_dir = dpdr_util.make_result_dir(RESULT_DIR_NAME)
     
     # print("main.py: predicting direction")
@@ -58,12 +56,10 @@ def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], ena
     # dpdr_util.write_direct(degs, trigonometrics, direct_ts, pdr_result_dir)
 
     print("main.py: predicting speed")
-    speed_model = FusionLSTM(**dpdr_util.load_hp(path.join(dpdr_param.ROOT_DIR, "model/", SPEED_MODEL_HP_FILE)))
+    speed_model = DualCNNLSTM(16, 12, 64, 1)
     speed_model.load_state_dict(torch.load(path.join(dpdr_param.ROOT_DIR, "model/", SPEED_MODEL_STATE_FILE)))
-    speedor = SpeedPredictor(inertial_log.val[:, :3], device, speed_model, inertial_log.ts)
-    speed, speed_ts = speedor.pred()
-    dpdr_util.plot_speed(speed, speed_ts, pdr_result_dir)
-    dpdr_util.write_speed(speed, speed_ts, pdr_result_dir)
+    speedor = SpeedPredictor(device, inertial_log, speed_model, pdr_result_dir)
+    speedor.export()
     
     rssi_log = PfLog(BEGIN, END, path.join(pf_param.ROOT_DIR, "log/observed/", RSSI_LOG_FILE))
     pf_result_dir = pf_util.make_result_dir(None if pdr_result_dir is None else path.basename(pdr_result_dir))
@@ -88,7 +84,7 @@ def particle_filter_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], ena
     t = BEGIN
     while t <= END:
         print(f"main.py: {t.time()}")
-        win = Window(t, rssi_log, map.resolution, speed, speed_ts)
+        win = Window(t, rssi_log, map.resolution, speedor.speed, speedor.ts)
 
         for i in range(PARTICLE_NUM):
             particles[i] = Particle(map, poses[i], directs[i], estim_pos)
@@ -158,4 +154,4 @@ if __name__ == "__main__":
     conf = set_pfpdr_params(args.conf_file)
     _set_main_params(conf)
 
-    particle_filter_with_pdr(conf, args.gpu_id, not args.no_display)
+    map_matching_with_pdr(conf, args.gpu_id, not args.no_display)
