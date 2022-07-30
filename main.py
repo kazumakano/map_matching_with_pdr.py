@@ -36,7 +36,6 @@ def _set_main_params(conf: dict[str, Any]) -> None:
 
 def map_matching_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], enable_show: bool = True) -> None:
     device = dpdr_util.get_device(gpu_id)
-    print(f"main.py: device is {device}")
     
     inertial_log = DpdrLog(BEGIN, END, path.join(dpdr_param.ROOT_DIR, "log/", INERTIAL_LOG_FILE))
     pdr_result_dir = dpdr_util.make_result_dir(RESULT_DIR_NAME)
