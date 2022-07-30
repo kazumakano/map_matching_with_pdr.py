@@ -3,33 +3,28 @@ from datetime import datetime, timedelta
 from typing import Any, Union
 import numpy as np
 import torch
-from deep_pdr.script.direction_predictor import DirectPredictor
-from deep_pdr.script.speed_predictor import SpeedPredictor
-import particle_filter_with_pdr.script.parameter as pfpdr_param
+import deep_pdr.script.parameter as dpdr_param
+import deep_pdr.script.utility as dpdr_util
 import particle_filter.script.parameter as pf_param
 import particle_filter.script.utility as pf_util
-from particle_filter.script.log import Log as PfLog
 from deep_pdr.script.log import Log as DpdrLog
+from deep_pdr.script.speed_model import DualCNNLSTM
+from deep_pdr.script.speed_predictor import SpeedPredictor
 from map_matching.script.map import Map
-from script.particle import Particle
+from particle_filter.script.log import Log as PfLog
 from particle_filter.script.resample import resample
 from particle_filter.script.truth import Truth
 from particle_filter_with_pdr.script.window import Window
-import deep_pdr.script.utility as dpdr_util
-from deep_pdr.script.direction_model import CNN
-from deep_pdr.script.speed_model import DualCNNLSTM
-import deep_pdr.script.parameter as dpdr_param
-import simple_pdr.script.parameter as spdr_param
+from script.particle import Particle
 
 
 def _set_main_params(conf: dict[str, Any]) -> None:
-    global BEGIN, END, INERTIAL_LOG_FILE, RSSI_LOG_FILE, DIRECT_MODEL_HP_FILE, DIRECT_MODEL_STATE_FILE, SPEED_MODEL_HP_FILE, SPEED_MODEL_STATE_FILE, INIT_DIRECT, INIT_DIRECT_SD, INIT_POS, INIT_POS_SD, LOST_TJ_POLICY, PARTICLE_NUM, RESULT_DIR_NAME
+    global BEGIN, END, INERTIAL_LOG_FILE, RSSI_LOG_FILE, SPEED_MODEL_STATE_FILE, INIT_DIRECT, INIT_DIRECT_SD, INIT_POS, INIT_POS_SD, LOST_TJ_POLICY, PARTICLE_NUM, RESULT_DIR_NAME
 
     BEGIN = datetime.strptime(conf["begin"], "%Y-%m-%d %H:%M:%S")
     END = datetime.strptime(conf["end"], "%Y-%m-%d %H:%M:%S")
     INERTIAL_LOG_FILE = str(conf["inertial_log_file"])
     RSSI_LOG_FILE = str(conf["rssi_log_file"])
-    # DIRECT_MODEL_STATE_FILE = str(conf["direct_model_state_file"])
     SPEED_MODEL_STATE_FILE = str(conf["speed_model_state_file"])
     INIT_DIRECT = np.float16(conf["init_direct"])
     INIT_DIRECT_SD = np.float16(conf["init_direct_sd"])
@@ -45,17 +40,7 @@ def map_matching_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], enable
     
     inertial_log = DpdrLog(BEGIN, END, path.join(dpdr_param.ROOT_DIR, "log/", INERTIAL_LOG_FILE))
     pdr_result_dir = dpdr_util.make_result_dir(RESULT_DIR_NAME)
-    
-    # print("main.py: predicting direction")
-    # direct_model = SimpleCNN(**dpdr_util.load_hp(path.join(dpdr_param.ROOT_DIR, "model/", DIRECT_MODEL_HP_FILE)))
-    # direct_model.load_state_dict(torch.load(path.join(dpdr_param.ROOT_DIR, "model/", DIRECT_MODEL_STATE_FILE))["model_state_dict"])
-    # director = DirectPredictor(device, direct_model, inertial_log.ts, inertial_log.val)
-    # trigonometrics, direct_ts = director.pred()
-    # degs = dpdr_util.conv_from_trigonometrics_to_degs(trigonometrics)
-    # dpdr_util.plot_direct(degs, direct_ts, pdr_result_dir)
-    # dpdr_util.write_direct(degs, trigonometrics, direct_ts, pdr_result_dir)
 
-    print("main.py: predicting speed")
     speed_model = DualCNNLSTM(16, 12, 64, 1)
     speed_model.load_state_dict(torch.load(path.join(dpdr_param.ROOT_DIR, "model/", SPEED_MODEL_STATE_FILE)))
     speedor = SpeedPredictor(device, inertial_log, speed_model, pdr_result_dir)
@@ -141,8 +126,8 @@ def map_matching_with_pdr(conf: dict[str, Any], gpu_id: Union[int, None], enable
 
 if __name__ == "__main__":
     import argparse
-    from particle_filter_with_pdr.script.parameter import set_params as set_pfpdr_params
     from map_matching.script.parameter import set_params as set_mm_params
+    from particle_filter_with_pdr.script.parameter import set_params as set_pfpdr_params
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--conf_file", help="specify config file", metavar="PATH_TO_CONF_FILE")
