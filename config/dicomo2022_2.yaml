@@ -1,0 +1,71 @@
+begin: "2022-04-19 16:15:12"
+end: "2022-04-19 16:20:41"
+init_direct: 90
+init_direct_sd: 0
+init_pos: [1155, 1063]
+init_pos_sd: 0
+lost_tj_policy: 2
+particle_num: 128
+result_dir_name: foo
+
+win_size: 2
+
+beacon_dir: dicomo2022_beacon
+enable_clear_map: True
+enable_draw_beacons: True
+enable_save_img: True
+enable_save_video: True
+frame_rate: 1
+map_conf_file: hcii2022_map.yaml
+map_img_file: hcii2022_map.pgm
+map_show_policy: 3
+map_show_range: [[300, 1425], [800, 1550]]
+win_stride: 1
+
+direct_sd: 1
+max_particle_stride: 25
+rand_pos_range: 375
+
+lost_resample_policy: 1
+
+truth_log_file: dicomo2022_truth_2.pkl
+
+dist_sd: 37.5
+el_correction: 2
+enable_write_conf: True
+estim_pos_policy: 2
+neg_weight_coef: 0
+propag_coef: 5
+
+win_policy: 1
+
+enable_draw_links: False
+enable_draw_nodes: False
+max_link_len: 75
+nodes_show_policy: 1
+set_nodes_links_policy: 3
+
+match_weight_policy: 4
+
+freq: 100
+
+speed_model_state_file: DualCNNLSTM.pt
+
+inertial_log_file: dicomo2022_inertial_agr_2.pkl
+rssi_log_file: dicomo2022_ble_2.csv
+
+stride_sd: 12.5
+
+# tentation
+log_file: foo_ble.csv
+gyro_drift: 0
+rotate_ax: 3
+default_speed: 1
+max_status_interval: 0.5
+min_step_interval: 0.5
+stature: 1.7
+step_len_coef: 0.42
+step_begin_acc_thresh: 1.05
+pos_peak_acc_thresh: 1.11
+neg_peak_acc_thresh: 0.93
+step_end_acc_thresh: 0.97
